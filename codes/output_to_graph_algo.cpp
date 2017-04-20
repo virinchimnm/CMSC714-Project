@@ -6,14 +6,15 @@
 #include <fstream>
 #include <unordered_map>
 #include <vector>
-#include <metis.h>
+#include <algorithm>
+// #include <metis.h>
 using namespace std;
 
 
 void read_graph(const char* filename1, const char* filename2){
 
     ifstream infile;
-    long long int a,b,i;
+    long long int a,b,i, e = 0;
 
 
     unordered_map<long long int, long long int> part_map;
@@ -29,6 +30,7 @@ void read_graph(const char* filename1, const char* filename2){
         {
             if(a != b){
               adjlist[a][b] = true;
+              e++;
 
             }
         }
@@ -41,17 +43,22 @@ void read_graph(const char* filename1, const char* filename2){
 
     infile.open(filename2,ios::in);
 
+    long long int num_part = 0;
     if(infile.is_open())
     {
         i=0;
         while(infile>>a)
         {
             part_map[i++] = a;
+            num_part = max(num_part, a);
         }
     }
     infile.close();
 
 
+    cout << adjlist.size() << endl;
+    cout << e/2 << endl;
+    cout << num_part + 1 << endl;
 
     unordered_map<long long int, std::unordered_map<long long int, bool> >::iterator src_it;
 
