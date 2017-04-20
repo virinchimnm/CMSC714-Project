@@ -37,7 +37,7 @@ int* BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcRank)
 
 	/*****************************************************************/
 	// printf("MyRank, SrcLid, SrcRank %d %d %d\n", myRank, srcLid, srcRank);
-	// printf("MyRank, localGraph.numVertices %d %d\n", myRank, localGraph.numVertices);
+	printf("MyRank, localGraph.numVertices %d %d\n", myRank, localGraph.numVertices);
 	int *d = (int *) malloc(sizeof(int)* localGraph.numVertices);
 	
 	// TODO: OMP parallel here
@@ -87,9 +87,6 @@ int* BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcRank)
 				{
 					// Append to the list of the owner about this node.
 					listAppend(sendBuf[owner], nborGID);
-
-					// Can ignore this, 
-					sendDummy[owner] += localGraph.edgeWgts[j];
 				}
 			}
 		}
@@ -166,7 +163,7 @@ int main(int argc, char *argv[]) {
 	MPI_Comm comm = MPI_COMM_WORLD;
 	// char *fname = "../CMSC714-Project/datasets/com-youtube.ungraph-final-input.txt";
 	// char *fname = "graph2.txt";
-	char *fname = "../CMSC714-Project/datasets/ca-GrQc-final-input.txt";
+	char *fname = "sample_input.txt";
 
 	int numParts;
 	MPI_Comm_rank(comm, &myRank);

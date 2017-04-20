@@ -31,24 +31,13 @@ void graphSend(MPI_Comm comm, GraphStruct sub_graph, int dest_proc) {
 				id_tag + 1, comm);
 		MPI_Send(sub_graph.partVector, send_count[0], MPI_INT, dest_proc,
 				id_tag + 2, comm);
-		MPI_Send(sub_graph.vertexSize, send_count[0], MPI_INT, dest_proc,
-				id_tag + 3, comm);
-		MPI_Send(sub_graph.vertexWgts, send_count[0], MPI_FLOAT, dest_proc,
-				id_tag + 4, comm);
 
 		if (send_count[1] > 0) {
 			MPI_Send(sub_graph.nborGIDs, send_count[1], MPI_INT,
 					dest_proc, id_tag + 5, comm);
 			MPI_Send(sub_graph.nborProcs, send_count[1], MPI_INT, dest_proc,
 					id_tag + 6, comm);
-			MPI_Send(sub_graph.edgeWgts, send_count[1], MPI_FLOAT, dest_proc,
-					id_tag + 7, comm);
 		}
-//		if(send_count[2] > 0){
-//			MPI_Send(sub_graph.partPlacement, sub_graph.numParts * 5, MPI_CHAR, dest_proc, id_tag + 8, comm);
-//		}
-//		MPI_Send(sub_graph.initialPartNo2NodeID, sub_graph.numParts, MPI_INT, dest_proc, id_tag + 8, comm);
-		MPI_Send(sub_graph.initialPartNo2CoreID, sub_graph.numParts, MPI_INT, dest_proc, id_tag + 9, comm);
 	}
 }
 void graphRecv(MPI_Comm comm, GraphStruct * local_graph){
@@ -69,19 +58,12 @@ void graphRecv(MPI_Comm comm, GraphStruct * local_graph){
 				id_tag + 1, comm, MPI_STATUS_IGNORE);
 		MPI_Recv(local_graph->partVector, send_count[0], MPI_INT, 0, id_tag + 2,
 				comm, MPI_STATUS_IGNORE);
-		MPI_Recv(local_graph->vertexSize, send_count[0], MPI_INT, 0, id_tag + 3,
-				comm, MPI_STATUS_IGNORE);
-		MPI_Recv(local_graph->vertexWgts, send_count[0], MPI_FLOAT, 0,
-				id_tag + 4, comm, MPI_STATUS_IGNORE);
 		if (send_count[1] > 0) {
 			MPI_Recv(local_graph->nborGIDs, send_count[1], MPI_INT, 0,
 					id_tag + 5, comm, MPI_STATUS_IGNORE);
 			MPI_Recv(local_graph->nborProcs, send_count[1], MPI_INT, 0,
 					id_tag + 6, comm, MPI_STATUS_IGNORE);
-			MPI_Recv(local_graph->edgeWgts, send_count[1], MPI_FLOAT, 0,
-					id_tag + 7, comm, MPI_STATUS_IGNORE);
 		}
-		MPI_Recv(local_graph->initialPartNo2CoreID, local_graph->numParts, MPI_INT, 0, id_tag + 9, comm, MPI_STATUS_IGNORE);
 	}
 
 	MPI_Recv(&ack, 1, MPI_INT, 0, 0, comm, MPI_STATUS_IGNORE);
@@ -122,15 +104,12 @@ void graphDistribute(MPI_Comm comm, GraphStruct global_graph, GraphStruct * loca
 				sub_graphs[i].numNbors, global_graph.numParts);
 		sub_graphs[i].numVertices = 0;
 		sub_graphs[i].numNbors = 0;
-		memcpy(sub_graphs[i].initialPartNo2CoreID, global_graph.initialPartNo2CoreID, global_graph.numParts * sizeof(int));
 	}
 
 	for (i = 0; i < global_graph.numVertices; i++) {
 		proc_id = global_graph.partVector[i] / num_parts_per_proc;
 		vtx_lid = sub_graphs[proc_id].numVertices ++;
 		sub_graphs[proc_id].vertexGIDs[vtx_lid] = global_graph.vertexGIDs[i];
-		sub_graphs[proc_id].vertexSize[vtx_lid] = global_graph.vertexSize[i];
-		sub_graphs[proc_id].vertexWgts[vtx_lid] = global_graph.vertexWgts[i];
 		sub_graphs[proc_id].partVector[vtx_lid] = global_graph.partVector[i];
 
 		nnbors = global_graph.nborIndex[i + 1] - global_graph.nborIndex[i];
@@ -142,7 +121,6 @@ void graphDistribute(MPI_Comm comm, GraphStruct global_graph, GraphStruct * loca
 
 			sub_graphs[proc_id].nborProcs[nbor_index] = nbor_proc;
 			sub_graphs[proc_id].nborGIDs[nbor_index] = global_graph.nborGIDs[j];
-			sub_graphs[proc_id].edgeWgts[nbor_index] = global_graph.edgeWgts[j];
 		}
 	}
 	free(global_part_vector);
