@@ -171,6 +171,8 @@ int main(int argc, char *argv[]) {
 
 
 	GraphStruct localGraph;
+
+	// TODO: Maybe we should be able to replace this by graphLoad(&localGraph, subGraphFile)
 	getSubGraph(comm, &localGraph, fname, numParts);
 	srand(time(NULL));
 	// int srcRank = rand() % numParts;

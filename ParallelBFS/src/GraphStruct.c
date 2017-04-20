@@ -58,6 +58,7 @@ int graphLoad(GraphStruct * graph, FILE * fp) {
 
 	/* Get the number of partitions  */
 	fscanf(fp, "%d", &numParts);
+	graph->numParts = numParts;
 	// printf("numParts = %d\n", numParts);
 
 	/* Allocate arrays to read in entire graph */

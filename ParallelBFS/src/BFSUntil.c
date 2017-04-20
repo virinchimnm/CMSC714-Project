@@ -10,6 +10,9 @@ void hashingPartitioning(GraphStruct *globalGraph, int numParts){
 	globalGraph->numParts = numParts;
 }
 
+
+// This functions sends a sub graph to the destination process
+// TODO: Remove this function dependency with parallel read of subgraphs
 void graphSend(MPI_Comm comm, GraphStruct sub_graph, int dest_proc) {
 	int num_procs;
 	MPI_Comm_size(comm, &num_procs);
@@ -40,6 +43,9 @@ void graphSend(MPI_Comm comm, GraphStruct sub_graph, int dest_proc) {
 		}
 	}
 }
+
+// This functions received a sub graph from process 0
+// TODO: Remove this function dependency with parallel read of subgraphs
 void graphRecv(MPI_Comm comm, GraphStruct * local_graph){
 	int num_procs;
 	MPI_Comm_size(comm, &num_procs);
@@ -74,23 +80,31 @@ void graphRecv(MPI_Comm comm, GraphStruct * local_graph){
 	}
 }
 
+// Maybe we should be able to remove this function altogether as long as
+// each process reads it's own graph.
 //distribute the graph according to the partition number (rank-i responsible for partition i);
-void graphDistribute(MPI_Comm comm, GraphStruct global_graph, GraphStruct * local_graph){
+void graphDistribute(MPI_Comm comm, GraphStruct global_graph, GraphStruct * local_graph)
+{
 	int num_procs;
 	MPI_Comm_size(comm, &num_procs);
 
 	int i, j, proc_id, vtx_lid, nnbors, nbor_index, nbor_proc;
+	
 	GraphStruct *sub_graphs = (GraphStruct *) malloc(sizeof(GraphStruct) * num_procs);
-	for (i = 0; i < num_procs; i++) {
+	for (i = 0; i < num_procs; i++) 
+	{
 		sub_graphs[i].numVertices = 0;
 		sub_graphs[i].numNbors = 0;
 	}
+
 	int num_parts_per_proc;
-	if(global_graph.numParts > num_procs){
+	if(global_graph.numParts > num_procs)
+	{
 		num_parts_per_proc = global_graph.numParts / num_procs + global_graph.numParts % num_procs; //TODO
 	}else{
 		num_parts_per_proc =  1;
 	}
+	
 	int *global_part_vector = malloc(sizeof(int) * global_graph.numVertices);
 	for (i = 0; i < global_graph.numVertices; i++) {
 		proc_id = global_graph.partVector[i] / num_parts_per_proc;
@@ -150,7 +164,10 @@ void getSubGraph(MPI_Comm comm, GraphStruct *sub_graph, char *fname, int numPart
 		}
 		GraphStruct globalGraph;
 		graphLoad(&globalGraph, fp);
-		hashingPartitioning(&globalGraph, numParts);	//hashing partitioning
+
+		// This functions creates a partition by assigning n/p vertices to each processors
+		// hashingPartitioning(&globalGraph, numParts);	//hashing partitioning
+
 		graphDistribute(comm, globalGraph, sub_graph);
 		graphDeinit(&globalGraph);
 		fclose(fp);
