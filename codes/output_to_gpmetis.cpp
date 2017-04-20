@@ -23,9 +23,16 @@ void read_graph(const char* filename){
     {
         while(infile>>a>>b)
         {
-            adjlist[a][b] = true;
-            e++;
-
+            if(a == b)
+            {
+                cerr << "Found a self edge" << endl;
+                continue;
+            }
+            if(adjlist[a].find(b) == adjlist[a].end())
+            {
+                adjlist[a][b] = true;
+                e++;
+            }
         }
     }
 
@@ -38,12 +45,19 @@ void read_graph(const char* filename){
     for(int i=0;i<adjlist.size();i++){
 
       unordered_map<long long int, bool>::iterator dest_it;
+      int num_neighbours = 0;
 
       // indexing for gpmetis starts from 1--- list the adjacent nodes
       for(dest_it=adjlist[i].begin();dest_it!=adjlist[i].end();++dest_it){
-        cout<<dest_it->first+1<<" ";
+        cout<< dest_it->first+1 << " ";
+        num_neighbours++;
       }
       cout<<endl;
+
+      if(num_neighbours == 0)
+      {
+        cerr << "Vertex " << i << " has no neighbours" << endl;
+      }
     }
 }
 

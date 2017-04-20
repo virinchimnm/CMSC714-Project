@@ -23,6 +23,11 @@ void read_graph(const char* filename){
     {
         while(infile>>a>>b)
         {
+            if(a == b)
+            {
+                cerr << "Found a self edge" << endl;
+                continue;
+            }
 
             if(node_map.find(a)==node_map.end())
             {
@@ -35,6 +40,8 @@ void read_graph(const char* filename){
             }
 
             cout<<node_map[a]<<" "<<node_map[b]<<endl;
+
+            cout<<node_map[b]<<" "<<node_map[a]<<endl;
         }
 
     }
