@@ -59,14 +59,14 @@ void Graph::dispGraph()
 
 void Graph::dispBFSTree()
 {
-	int lvl_cnt = 0;
-	for(const std::vector<int> lvl : bfs_tree)
-	{
-		std::cout << "L[" << lvl_cnt++ << "]: ";
-		for(const int node: lvl)
-			std::cout << node << " ";
-		std::cout << std::endl;
-	}
+	// int lvl_cnt = 0;
+	// for(const std::vector<int> lvl : bfs_tree)
+	// {
+	// 	std::cout << "L[" << lvl_cnt++ << "]: ";
+	// 	for(const int node: lvl)
+	// 		std::cout << node << " ";
+	// 	std::cout << std::endl;
+	// }
 	std::cout << "exec_time : " <<exec_time << "ms" << std::endl;
 
 	for(int i=0; i<N_v; i++)

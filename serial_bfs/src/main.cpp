@@ -36,11 +36,12 @@ vector<string> parseIn()
 void initGraph(Graph &g, vector<string> &lines)
 {
 	int line_cnt = 0;
-	int n_v = stoi(lines[line_cnt++]);
-	int n_e = stoi(lines[line_cnt++]);
+	stringstream tmp(lines[line_cnt++]);
+	int n_v;
+	int n_e;
+	tmp >> n_v >> n_e;
 	g =  Graph(n_v,n_e);
 	cout << "n_v = " << n_v << " n_e " << n_e<<endl;
-	int n_p = stoi(lines[line_cnt++]);
 	// cout << "skipping :" << n_p << " partition info lines" << endl;
 	// line_cnt+=n_p;
 
@@ -92,7 +93,7 @@ int main(int argc, char *argv[])
 	Graph g;
 	vector<string> lines = parseIn();
 	initGraph(g,lines);
-	cout << "Graph with " << g.N_v << " created" << endl;
+	//cout << "Graph with " << g.N_v << " created" << endl;
 	g.bfs(root);
 	g.dispBFSTree();
 	if(op != "")

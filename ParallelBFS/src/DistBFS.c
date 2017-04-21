@@ -37,7 +37,7 @@ int* BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcRank)
 
 	/*****************************************************************/
 	// printf("MyRank, SrcLid, SrcRank %d %d %d\n", myRank, srcLid, srcRank);
-	printf("MyRank, localGraph.numVertices %d %d\n", myRank, localGraph.numVertices);
+	//printf("MyRank, localGraph.numVertices %d %d\n", myRank, localGraph.numVertices);
 	int *d = (int *) malloc(sizeof(int)* localGraph.numVertices);
 	
 	// TODO: OMP parallel here
@@ -154,7 +154,7 @@ int* BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcRank)
 	free(sendBuf);
 	free(recvBuf);
 	free(recvCount);
-	printf("myRank %d Done\n", myRank);
+	//printf("myRank %d Done\n", myRank);
 	return d;
 }
 
@@ -163,7 +163,8 @@ int main(int argc, char *argv[]) {
 	MPI_Comm comm = MPI_COMM_WORLD;
 	// char *fname = "../CMSC714-Project/datasets/com-youtube.ungraph-final-input.txt";
 	// char *fname = "graph2.txt";
-	char *fname = "sample_input.txt";
+	 char *fname = "sample_input.txt";
+	//char *fname = "youtube-4.txt";
 
 	int numParts;
 	MPI_Comm_rank(comm, &myRank);
@@ -192,7 +193,7 @@ int main(int argc, char *argv[]) {
 	MPI_Allreduce(MPI_IN_PLACE, globalDist, totalVtx, MPI_INT, MPI_MAX, comm);
 	if(myRank == srcRank){
 		for(i=0; i<totalVtx; i++){
-			printf("d(%d, %d)=%d\n", localGraph.vertexGIDs[srcLid], i, globalDist[i]);
+			printf("d[%d] = %d\n", i, globalDist[i]);
 		}
 	}
 	free(globalDist);

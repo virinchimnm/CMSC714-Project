@@ -1,0 +1,25 @@
+./build.sh
+	It will create BFS.o and ompBFS.o output files
+	serial.o is copied from the serial folder 
+
+To run
+
+1. ./serial < youtube-4.txt >output/serial.txt
+2. mpirun -n 4 ./BFS > output/bfsmpi.txt
+3. mpirun -n 4 ./ompBFS > output/bfsomp.txt
+
+To compare
+
+./compare.sh output/bfsmpi.txt output/bfsomp.txt 
+
+	Diffing output/bfsmpi.txt output/serial.txt
+	0a1,9
+	> parsing input file
+	> ..... Done!
+	> n_v = 25 n_e 40
+	> First Edge Info Line:
+	> 0 0 2 1 5
+	> Last Edge Info Line:
+	> 24 3 2 23 19
+	> .....Graph Initialzed!! 
+	> exec_time : 0.018ms
