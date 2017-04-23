@@ -1,0 +1,26 @@
+To run:
+./build.sh
+	* Sets up /build and  /bin directories
+	* It builds the serial BFS code from ../serial_bfs/.. and saves the executable in /bin directory
+	* It builds the MPI BFS code from /src/ and saves the executable in /bin directory
+
+./run.sh
+	* Sets up output directories
+	-ip_f_name="sample_input.txt" :: sets the input file in input/ directory
+	-op_f_prefix="s"	:: sets the suffix of the output in output/ directory i.e.
+						   serial output will be saved as sser.txt and mpi output will 
+						   be saved as smpi.txt
+    -root=2 :: sets the root node of the mpi code.
+	* runs the serial and mpi version of the code
+	* compares the output.
+
+** SET THE ROOT TO 0 for SAMPLE_INPUT.TXT and SET ROOT TO 2 for YOUTUBE-4.TXT DATASET
+
+
+DETAILS TO RUN CODE INDIVIDUALLY!
+
+# for serial code:
+./bin/serial.out -r $root -o "$opser" < $inp 
+
+# for mpi code:
+mpirun -n 4 bin/mpibfs.out -i "$inp" -o "$opmpi"

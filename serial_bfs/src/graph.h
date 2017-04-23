@@ -77,13 +77,9 @@ void Graph::saveBFSTree(std::string &op)
 {
 	std::ofstream myfile;
 	myfile.open (op, std::ofstream::out | std::ofstream::trunc);
-
-	for(const std::vector<int> lvl : bfs_tree)
-	{
-		for(const int node: lvl)
-			myfile << node << " ";
-		myfile << std::endl;
-	}
+	int i = 0;
+	for(const int d: dist)
+			myfile << "d[" << i++ << "] = " << d << std::endl;
 	myfile << exec_time <<"ms"<<std::endl;
 	myfile.close();	
 	std::cout << "Output Save to " << op << std::endl;						

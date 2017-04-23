@@ -3,9 +3,12 @@
 *.lo
 *.o
 *.obj
+*.gch
 
 # dataset
 *youtube*.txt
 
 #outputs
 */output/*
+*/build/*
+*/bin/*
