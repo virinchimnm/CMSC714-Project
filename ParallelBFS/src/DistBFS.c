@@ -3,7 +3,7 @@
 #include <mpi.h>
 #include "BFS.h"
 #include "ArrayList.h"
-#include <omp.h>
+// #include <omp.h>
 
 static int myRank;
 
@@ -18,7 +18,6 @@ int* BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcRank)
 	// TODO: Replace gid2lid by an unordered_map
 	int *gid2lid = (int *) calloc(sizeof(int), totalVtx);
 
-	#pragma omp parallel for private(i)
 	for(i=0; i<localGraph.numVertices; i++)
 	{
 		int gid = localGraph.vertexGIDs[i];
@@ -34,7 +33,6 @@ int* BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcRank)
 	// TODO: Replace ArrayList by vector
 	ArrayList_t **sendBuf = (ArrayList_t **) malloc(sizeof(ArrayList_t *) * localGraph.numParts);
 	
-	#pragma omp parallel for
 	for(i=0; i<localGraph.numParts; i++)
 	{
 		sendBuf[i] = listCreate();
@@ -45,7 +43,6 @@ int* BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcRank)
 	//printf("MyRank, localGraph.numVertices %d %d\n", myRank, localGraph.numVertices);
 	int *d = (int *) malloc(sizeof(int)* localGraph.numVertices);
 	
-	#pragma omp parallel for
 	for(int i=0; i<localGraph.numVertices; i++)
 		d[i] = -1;
 	
@@ -65,13 +62,13 @@ int* BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcRank)
 		ArrayList_t * NS = listCreate();	//vertices active in the next computation step
 		memset(sendDummy, 0, sizeof(unsigned long) * localGraph.numParts);
 
-		#pragma omp parallel for private(i)
+		//#pragma omp parallel for private(i)
 		for(i=0; i<listLength(FS); i++)
 		{
 			int lid = listGetIdx(FS, i);
 
 			// Iterate over the neighbours of the vertex
-			#pragma omp parallel for firstprivate(myRank) //not sure if we need first private
+			//#pragma omp parallel for private(j) firstprivate(myRank) //not sure if we need first private
 			for(j=localGraph.nborIndex[lid]; j<localGraph.nborIndex[lid + 1]; j++)
 			{
 				// This is the Global ID of the neighbour
@@ -85,7 +82,7 @@ int* BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcRank)
 				{
 					int lid = gid2lid[nborGID];
 					if(d[lid] == -1){
-						#pragma omp critical // works without it!
+						//#pragma omp critical // works without it!
 						listAppend(NS, lid);
 						d[lid] = level;
 					}
@@ -93,7 +90,7 @@ int* BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcRank)
 				else
 				{
 					// Append to the list of the owner about this node.
-					#pragma omp critical // works without it!
+					//#pragma omp critical // works without it!
 					listAppend(sendBuf[owner], nborGID);
 				}
 			}
@@ -104,7 +101,6 @@ int* BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcRank)
 
 		MPI_Request request;
 		//sending newly visited nbors to their owners in parellel
-		#pragma omp parallel for //not sure if we need first private
 		for(i=0; i<localGraph.numParts; i++)
 		{
 			// Sending the length of the send buffer to the neighbours
@@ -135,10 +131,8 @@ int* BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcRank)
 
 		//handling newly visited vertices and compute the distance
 		
-		#pragma omp parallel for
 		for(i=0; i<localGraph.numParts; i++)
 		{
-			#pragma omp parallel for private(j)
 			for(j=0; j<recvCount[i]; j++)
 			{
 				int gid = recvBuf[i][j];
@@ -146,7 +140,6 @@ int* BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcRank)
 				if(d[lid] == -1)
 				{
 					d[lid] = level;
-					#pragma omp critical 
 					listAppend(FS, lid);
 				}
 			}
@@ -156,7 +149,6 @@ int* BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcRank)
 		numActiveVertices = listLength(FS);
 		MPI_Allreduce(MPI_IN_PLACE, &numActiveVertices, 1, MPI_INT, MPI_SUM, comm);
 		
-		#pragma omp parallel for
 		for(i=0; i<localGraph.numParts; i++){
 			listClear(sendBuf[i]);
 		}
@@ -168,7 +160,6 @@ int* BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcRank)
 	free(sendDummy);
 	free(recvDummy);
 
-	#pragma omp parallel for
 	for(i=0; i<localGraph.numParts; i++){
 		listDestroy(sendBuf[i]);
 	}
@@ -184,8 +175,8 @@ int main(int argc, char *argv[]) {
 	MPI_Comm comm = MPI_COMM_WORLD;
 	// char *fname = "../CMSC714-Project/datasets/com-youtube.ungraph-final-input.txt";
 	// char *fname = "graph2.txt";
-	 char *fname = "sample_input.txt";
-	//char *fname = "youtube-4.txt";
+	// char *fname = "sample_input.txt";
+	char *fname = "youtube-4.txt";
 
 	int numParts;
 	MPI_Comm_rank(comm, &myRank);

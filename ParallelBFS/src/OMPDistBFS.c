@@ -18,7 +18,7 @@ int* BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcRank)
 	// TODO: Replace gid2lid by an unordered_map
 	int *gid2lid = (int *) calloc(sizeof(int), totalVtx);
 
-	#pragma omp parallel for private(i)
+	#pragma omp parallel for
 	for(i=0; i<localGraph.numVertices; i++)
 	{
 		int gid = localGraph.vertexGIDs[i];
@@ -65,13 +65,13 @@ int* BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcRank)
 		ArrayList_t * NS = listCreate();	//vertices active in the next computation step
 		memset(sendDummy, 0, sizeof(unsigned long) * localGraph.numParts);
 
-		#pragma omp parallel for private(i)
+		#pragma omp parallel for
 		for(i=0; i<listLength(FS); i++)
 		{
 			int lid = listGetIdx(FS, i);
 
 			// Iterate over the neighbours of the vertex
-			#pragma omp parallel for firstprivate(myRank) //not sure if we need first private
+			#pragma omp parallel for  //not sure if we need first private
 			for(j=localGraph.nborIndex[lid]; j<localGraph.nborIndex[lid + 1]; j++)
 			{
 				// This is the Global ID of the neighbour
@@ -138,7 +138,7 @@ int* BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcRank)
 		#pragma omp parallel for
 		for(i=0; i<localGraph.numParts; i++)
 		{
-			#pragma omp parallel for private(j)
+			#pragma omp parallel for
 			for(j=0; j<recvCount[i]; j++)
 			{
 				int gid = recvBuf[i][j];
@@ -184,8 +184,8 @@ int main(int argc, char *argv[]) {
 	MPI_Comm comm = MPI_COMM_WORLD;
 	// char *fname = "../CMSC714-Project/datasets/com-youtube.ungraph-final-input.txt";
 	// char *fname = "graph2.txt";
-	 char *fname = "sample_input.txt";
-	//char *fname = "youtube-4.txt";
+	//char *fname = "sample_input.txt";
+	char *fname = "youtube-4.txt";
 
 	int numParts;
 	MPI_Comm_rank(comm, &myRank);
