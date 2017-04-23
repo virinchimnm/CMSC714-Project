@@ -6,8 +6,8 @@ if [ ! -d "$WORKDIR/output" ]; then
   mkdir "$WORKDIR/output"
 fi
 
-root=0
-ip_f_name="sample_input.txt"
+root=2
+ip_f_name="youtube-4.txt"
 op_f_prefix="s"
 inp="input/"$ip_f_name
 
