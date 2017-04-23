@@ -22,10 +22,8 @@ mpic++ -fopenmp -I/usr/local/include -I"$WORKDIR/include" -O0 -g3 -Wall -c -fmes
 mv *.o build
 echo "Building dependencies done!"
 
-
-
 mpic++ build/DistBFS.o build/BFSUntil.o build/GraphStruct.o -lmpi -lm -std=c++11 -o bin/mpibfs.out
 echo "Building MPI BFS done!"
 
-# mpic++ -fopenmp build/OMPDistBFS.o  build/BFSUntil.o build/GraphStruct.o -lmpi -lm -std=c++11 -o bin/ompBFS.out
-# echo "Building OMP-MPI BFS done!"
+mpic++ -fopenmp build/OmpDistBFS.o  build/BFSUntil.o build/GraphStruct.o -lmpi -lm -std=c++11 -o bin/ompbfs.out
+echo "Building OMP-MPI BFS done!"

@@ -24,3 +24,7 @@ DETAILS TO RUN CODE INDIVIDUALLY!
 
 # for mpi code:
 mpirun -n 4 bin/mpibfs.out -i "$inp" -o "$opmpi"
+
+
+FUTURE WORK:
+OpenMP: http://stackoverflow.com/questions/18669296/c-openmp-parallel-for-loop-alternatives-to-stdvector
