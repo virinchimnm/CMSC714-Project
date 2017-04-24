@@ -95,10 +95,12 @@ int main(int argc, char *argv[])
 	initGraph(g,lines);
 	//cout << "Graph with " << g.N_v << " created" << endl;
 	g.bfs(root);
-	g.dispBFSTree();
+	
 	if(op != "")
 	{
 		g.saveBFSTree(op);
 	}
+	else 
+		g.dispBFSTree();
 	return  0;
 }
