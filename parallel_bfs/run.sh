@@ -9,7 +9,8 @@ fi
 root=2
 ip_f_name="youtube-4.txt"
 op_f_prefix="you4"
-inp="input/"$ip_f_name
+#inp="input/"$ip_f_name
+inp=/lustre/cmsc714-1buw/datasets/com-youtube.ungraph-4.txt
 
 opser="output/"$op_f_prefix"ser.txt"
 opmpi="output/"$op_f_prefix"mpi.txt" 

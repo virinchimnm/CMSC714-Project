@@ -55,7 +55,7 @@ std::vector<int> BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcR
 		//visiting neighbouring vertices in parallel
 		std::vector<int> *NS = new std::vector<int>(0);
 		sendDummy.assign(localGraph.numParts,0);
-		//#pragma omp parallel for private(i)
+
 		for(uint i=0; i<FS->size(); i++)
 		{
 			int lid = FS->at(i);
@@ -74,6 +74,7 @@ std::vector<int> BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcR
 					int lid_ = gid2lid[nborGID];
 					if(dist[lid_] == -1)
 					{
+						#pragma omp critical
 						NS->push_back(lid_);
 						dist[lid_] = level;
 					}
@@ -90,7 +91,7 @@ std::vector<int> BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcR
 
 		MPI_Request request;
 		//sending newly visited nbors to their owners in parallel
-		#pragma omp parallel for
+		//#pragma omp parallel for
 		for(int i=0; i<localGraph.numParts; i++)
 		{
 			// Sending the length of the send buffer to the neighbours
@@ -123,10 +124,10 @@ std::vector<int> BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcR
 		}
 
 		//handling newly visited vertices and compute the distance
-		
+		#pragma omp parallel for
 		for(int i=0; i<localGraph.numParts; i++)
 		{
-
+			#pragma omp parallel for
 			for(int j=0; j<recvCount[i]; j++)
 			{
 				int gid = recvBuf[i][j];

@@ -1,0 +1,36 @@
+Setting up directories .. 
+Running Serial BFS :
+root set to 2
+output file path output/you4ser.txt
+parsing input file
+..... Done!
+n_v = 1134890 n_e 4200032
+First Edge Info Line:
+2987624
+./run.sh: line 20: 77888 Segmentation fault      (core dumped) ./bin/serial.out -r $root -o "$opser" < $inp
+Running MPI BFS :
+input file path /lustre/cmsc714-1buw/datasets/com-youtube.ungraph-4.txt
+output file path output/you4mpi.txt
+output saved to output/you4mpi.txt
+Comparing outputs
+Diffing output/you4ser.txt output/you4mpi.txt
+1134891c1134891
+< 490ms
+---
+> 330ms (mpi)
+Running MPI BFS :
+input file path /lustre/cmsc714-1buw/datasets/com-youtube.ungraph-4.txt
+output file path output/you4omp.txt
+[compute-b28-48:77910] *** Process received signal ***
+[compute-b28-48:77910] Signal: Floating point exception (8)
+[compute-b28-48:77910] Signal code: Integer divide-by-zero (1)
+[compute-b28-48:77910] Failing at address: 0x415fd4
+--------------------------------------------------------------------------
+mpirun noticed that process rank 2 with PID 77909 on node compute-b28-48.deepthought2.umd.edu exited on signal 11 (Segmentation fault).
+--------------------------------------------------------------------------
+Comparing outputs
+Diffing output/you4ser.txt output/you4omp.txt
+1134891c1134891
+< 490ms
+---
+> 370ms (mpi/omp)
