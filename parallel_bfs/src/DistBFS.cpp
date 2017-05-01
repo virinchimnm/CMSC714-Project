@@ -13,6 +13,8 @@ typedef unsigned int uint;
 static int myRank;
 static clock_t exec_time;
 
+using namespace std;
+
 std::vector<int> BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcRank)
 {
 	// omp_set_num_threads(omp_n); Should be passed from the argument list
@@ -200,6 +202,8 @@ int main(int argc, char *argv[]) {
 	MPI_Comm comm = MPI_COMM_WORLD;
 	MPI_Comm_rank(comm, &myRank);
 	MPI_Comm_size(comm, &numParts);
+
+	cout << "Number of MPI processes " << numParts << endl;
 	
 	int srcRank = 0;
 	int srcLid = 0;
