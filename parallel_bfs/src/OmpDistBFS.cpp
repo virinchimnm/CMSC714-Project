@@ -25,10 +25,10 @@ std::vector<int> BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcR
 	// TODO: Replace gid2lid by an unordered_map
 
 	std::unordered_map<int,int> gid2lid;
-	#pragma omp parallel for
+	// #pragma omp parallel for
 	for(int i =0; i<localGraph.numVertices; i++)
 	{	
-		#pragma omp critical
+		// #pragma omp critical
 		gid2lid[localGraph.vertexGIDs[i]] = i;
 	}
 
@@ -57,31 +57,33 @@ std::vector<int> BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcR
 		//visiting neighbouring vertices in parallel
 		std::vector<int> *NS = new std::vector<int>(0);
 		sendDummy.assign(localGraph.numParts,0);
-		//#pragma omp parallel for private(i)
-		for(uint i=0; i<FS->size(); i++)
+		
+		int i, j, nborGID, owner, lid_;
+		#pragma omp parallel for private(i, j, nborGID, owner, lid_) shared(FS, localGraph, gid2lid, dist) collapse(2)
+		for(i=0; i<FS->size(); i++)
 		{
-			int lid = FS->at(i);
-
 			// Iterate over the neighbours of the vertex
-			for(int j=localGraph.nborIndex[lid]; j<localGraph.nborIndex[lid + 1]; j++)
+			for(j=localGraph.nborIndex[FS->at(i)]; j<localGraph.nborIndex[FS->at(i) + 1]; j++)
 			{
 				// This is the Global ID of the neighbour
-				int nborGID = localGraph.nborGIDs[j];
+				nborGID = localGraph.nborGIDs[j];
 				// This is the processor on which the neighbour is sitting on
-				int owner = localGraph.nborProcs[j];
+				owner = localGraph.nborProcs[j];
 
 				// If I am the owner, find the local ID of this node and append to neighbour frontier.
 				if(owner == myRank)
 				{
-					int lid_ = gid2lid[nborGID];
+					lid_ = gid2lid[nborGID];
 					if(dist[lid_] == -1)
 					{
+						#pragma omp critical
 						NS->push_back(lid_);
 						dist[lid_] = level;
 					}
 				}
 				else
 				{
+					#pragma omp critical
 					sendBuf[owner].push_back(nborGID);
 				}
 			}
@@ -92,7 +94,7 @@ std::vector<int> BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcR
 
 		MPI_Request request;
 		//sending newly visited nbors to their owners in parallel
-		#pragma omp parallel for
+		// #pragma omp parallel for
 		for(int i=0; i<localGraph.numParts; i++)
 		{
 			// Sending the length of the send buffer to the neighbours
@@ -103,7 +105,7 @@ std::vector<int> BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcR
 			}
 		}
 
-		#pragma omp parallel for
+		// #pragma omp parallel for
 		for(int i=0; i<localGraph.numParts; i++)
 		{
 			// Rank i gather sendCount[i] from each rank
@@ -113,13 +115,13 @@ std::vector<int> BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcR
 			MPI_Gather(&sendDummy.front() + i, 1, MPI_UNSIGNED_LONG, &recvDummy.front(), 1, MPI_UNSIGNED_LONG, i, comm);
 		}
 
-		#pragma omp parallel for
+		// #pragma omp parallel for
 		for(int i=0; i<localGraph.numParts; i++)
 		{
 			recvBuf[i] = std::vector<int>(recvCount[i]);
 			if(recvCount[i])
 			{
-				#pragma omp critical
+				// #pragma omp critical
 				MPI_Recv(&(recvBuf[i].front()), recvCount[i], MPI_INT, i, 1, comm, MPI_STATUS_IGNORE);
 			}
 		}
