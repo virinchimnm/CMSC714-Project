@@ -41,8 +41,6 @@ std::vector<int> BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcR
 
 	/******* Initialize sending and receiving buffer ********/
 	std::vector<int> recvCount(localGraph.numParts);
-	std::vector<unsigned long> recvDummy(localGraph.numParts);
-	std::vector<unsigned long> sendDummy(localGraph.numParts);
 	
 	std::vector<std::vector<int> > recvBuf(localGraph.numParts);
 	std::vector<std::vector<int> > sendBuf(localGraph.numParts);
@@ -72,15 +70,14 @@ std::vector<int> BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcR
 	do
 	{
 		//visiting neighbouring vertices in parallel
-		sendDummy.assign(localGraph.numParts,0);
 		
 		int i = 0, j, nborGID, owner, lid_;
 		//#pragma omp parallel for private(i, j, nborGID, owner, lid_) shared(FS, localGraph, gid2lid, dist) collapse(2)
 		// #pragma omp parallel for private(i, j, nborGID, owner, lid_) shared(FS, localGraph, gid2lid, dist)
 		for(i=0; i < lenFS; i++)
 		{
-			// #pragma omp parallel for private(j, nborGID, owner, lid_) shared(FS, localGraph, gid2lid, dist)
 			// Iterate over the neighbours of the vertex
+			#pragma omp parallel for private(j, nborGID, owner, lid_) shared(FS, localGraph, gid2lid, dist)
 			for(j=localGraph.nborIndex[(*FS)[i]]; j<localGraph.nborIndex[(*FS)[i] + 1]; j++)
 			{
 				// This is the Global ID of the neighbour
@@ -94,19 +91,19 @@ std::vector<int> BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcR
 					lid_ = gid2lid[nborGID];
 					if(dist[lid_] == -1)
 					{
-						//#pragma omp critical
+						#pragma omp critical
 						(*NS)[lenNS++] = lid_;
 						dist[lid_] = level;
 					}
 				}
 				else
 				{
-					//#pragma omp critical
 					// sendBuf[owner].push_back(nborGID);
 					#ifdef DEBUG
                     if (sendCount[owner] > EXCHANGE_BUFFER_SIZE)
 						cout << "Send buffer overflow" << endl;
 					#endif
+					#pragma omp critical
 					sendBuf[owner][sendCount[owner]++] = nborGID;
 				}
 			}
@@ -140,7 +137,6 @@ std::vector<int> BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcR
 			// This is the total number of neighbours this node gets
 			int s = sendCount[i];
 			MPI_Gather(&(s), 1, MPI_INT, &recvCount.front(), 1, MPI_INT, i, comm);
-			MPI_Gather(&sendDummy.front() + i, 1, MPI_UNSIGNED_LONG, &recvDummy.front(), 1, MPI_UNSIGNED_LONG, i, comm);
 		}
 
 		// #pragma omp parallel for
