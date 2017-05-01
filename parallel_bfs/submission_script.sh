@@ -1,6 +1,6 @@
 #!/bin/tcsh
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=4
+#SBATCH --nodes=2
+#SBATCH --ntasks-per-node=1
 #SBATCH -t 00:00:15
 #SBATCH --mem-per-cpu=2048
 #SBATCH --exclusive
@@ -15,6 +15,8 @@ module load openmpi/gnu
 #echo "Hostnames - "
 #/bin/hostname
 
-#./build++.sh
+./build++.sh
 
-mpirun  bin/mpibfs.out -i /lustre/cmsc714-1buw/datasets/amazon-4.txt -o /lustre/cmsc714-1buw/datasets/output/openmp_2_16.txt
+mpirun  bin/mpibfs.out -i /lustre/cmsc714-1buw/datasets/amazon-2.txt -o /lustre/cmsc714-1buw/datasets/output/mpi_2_16.txt
+
+mpirun  bin/ompbfs.out -i /lustre/cmsc714-1buw/datasets/amazon-2.txt -o /lustre/cmsc714-1buw/datasets/output/openmp_2_16.txt

@@ -8,6 +8,10 @@
 #include "BFS.h"
 #include <omp.h>
 
+#define BUFFER_SIZE 100000
+#define EXCHANGE_BUFFER_SIZE 100000
+#define DEBUG
+
 typedef unsigned int uint;
 
 static int myRank;
@@ -17,7 +21,10 @@ using namespace std;
 
 std::vector<int> BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcRank)
 {
-	// omp_set_num_threads(omp_n); Should be passed from the argument list
+		
+	omp_set_num_threads(4); // Should be passed from the argument list
+	int numThreads = omp_get_max_threads();
+	cout << "Num OMP threads " << numThreads << endl;
 	/************** Compute the mapping of vertex GID to vertex lid *****************/
 	int totalVtx;
 	MPI_Allreduce(&(localGraph.numVertices), &totalVtx, 1, MPI_INT, MPI_SUM, comm);
@@ -37,16 +44,26 @@ std::vector<int> BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcR
 	std::vector<unsigned long> recvDummy(localGraph.numParts);
 	std::vector<unsigned long> sendDummy(localGraph.numParts);
 	
-	std::vector<std::vector<int>> recvBuf(localGraph.numParts);
-	std::vector<std::vector<int>> sendBuf(localGraph.numParts);
+	std::vector<std::vector<int> > recvBuf(localGraph.numParts);
+	std::vector<std::vector<int> > sendBuf(localGraph.numParts);
+	std::vector<int> sendCount(localGraph.numParts);
+
+	for(int i=0; i<localGraph.numParts; i++)
+	{
+		sendBuf[i] = std::vector<int>(EXCHANGE_BUFFER_SIZE);
+		sendCount[i] = 0;
+	}
 
 	std::vector<int> dist(localGraph.numVertices, -1);
-	std::vector<int> *FS = new std::vector<int>(0);
+	std::vector<int> *FS = new std::vector<int>(BUFFER_SIZE);
+	std::vector<int> *NS = new std::vector<int>(BUFFER_SIZE);
+	std::vector<int> *temp;
+	int lenFS = 0, lenNS = 0;
 	
 	if(srcRank == myRank)
 	{
 		dist[srcLid] = 0;
-		FS->push_back(srcLid);
+		(*FS)[lenFS++] = srcLid;
 	}
 
 	int level = 1;
@@ -55,15 +72,16 @@ std::vector<int> BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcR
 	do
 	{
 		//visiting neighbouring vertices in parallel
-		std::vector<int> *NS = new std::vector<int>(0);
 		sendDummy.assign(localGraph.numParts,0);
 		
-		int i, j, nborGID, owner, lid_;
-		#pragma omp parallel for private(i, j, nborGID, owner, lid_) shared(FS, localGraph, gid2lid, dist) collapse(2)
-		for(i=0; i<FS->size(); i++)
+		int i = 0, j, nborGID, owner, lid_;
+		//#pragma omp parallel for private(i, j, nborGID, owner, lid_) shared(FS, localGraph, gid2lid, dist) collapse(2)
+		// #pragma omp parallel for private(i, j, nborGID, owner, lid_) shared(FS, localGraph, gid2lid, dist)
+		for(i=0; i < lenFS; i++)
 		{
+			// #pragma omp parallel for private(j, nborGID, owner, lid_) shared(FS, localGraph, gid2lid, dist)
 			// Iterate over the neighbours of the vertex
-			for(j=localGraph.nborIndex[FS->at(i)]; j<localGraph.nborIndex[FS->at(i) + 1]; j++)
+			for(j=localGraph.nborIndex[(*FS)[i]]; j<localGraph.nborIndex[(*FS)[i] + 1]; j++)
 			{
 				// This is the Global ID of the neighbour
 				nborGID = localGraph.nborGIDs[j];
@@ -76,21 +94,31 @@ std::vector<int> BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcR
 					lid_ = gid2lid[nborGID];
 					if(dist[lid_] == -1)
 					{
-						#pragma omp critical
-						NS->push_back(lid_);
+						//#pragma omp critical
+						(*NS)[lenNS++] = lid_;
 						dist[lid_] = level;
 					}
 				}
 				else
 				{
-					#pragma omp critical
-					sendBuf[owner].push_back(nborGID);
+					//#pragma omp critical
+					// sendBuf[owner].push_back(nborGID);
+					#ifdef DEBUG
+                    if (sendCount[owner] > EXCHANGE_BUFFER_SIZE)
+						cout << "Send buffer overflow" << endl;
+					#endif
+					sendBuf[owner][sendCount[owner]++] = nborGID;
 				}
 			}
 		}
 
-		FS->clear();
+		// FS->clear();
+		temp = FS;
 		FS = NS;
+		NS = temp;
+
+		lenFS = lenNS;
+		lenNS = 0;
 
 		MPI_Request request;
 		//sending newly visited nbors to their owners in parallel
@@ -98,9 +126,9 @@ std::vector<int> BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcR
 		for(int i=0; i<localGraph.numParts; i++)
 		{
 			// Sending the length of the send buffer to the neighbours
-			if(sendBuf[i].size())
+			if(sendCount[i] > 0)
 			{
-				MPI_Isend(&(sendBuf[i].front()), sendBuf[i].size(), MPI_INT, i, 1, comm, &request);
+				MPI_Isend(&(sendBuf[i].front()), sendCount[i], MPI_INT, i, 1, comm, &request);
 				MPI_Request_free(&request);
 			}
 		}
@@ -110,7 +138,7 @@ std::vector<int> BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcR
 		{
 			// Rank i gather sendCount[i] from each rank
 			// This is the total number of neighbours this node gets
-			int s = sendBuf[i].size();
+			int s = sendCount[i];
 			MPI_Gather(&(s), 1, MPI_INT, &recvCount.front(), 1, MPI_INT, i, comm);
 			MPI_Gather(&sendDummy.front() + i, 1, MPI_UNSIGNED_LONG, &recvDummy.front(), 1, MPI_UNSIGNED_LONG, i, comm);
 		}
@@ -138,17 +166,21 @@ std::vector<int> BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcR
 				if(dist[lid] == -1)
 				{
 					dist[lid] = level;
-					FS->push_back(lid);
+					(*FS)[lenFS++] = lid;
 				}
 			}
-			 // is this required?
 		}
+		cout << "LenFS " << lenFS << endl;
 
-
-		numActiveVertices = FS->size();
+		numActiveVertices = lenFS;
 		MPI_Allreduce(MPI_IN_PLACE, &numActiveVertices, 1, MPI_INT, MPI_SUM, comm);
 		recvBuf.assign(localGraph.numParts,std::vector<int>());
-		sendBuf.assign(localGraph.numParts,std::vector<int>());
+		// sendBuf.assign(localGraph.numParts,std::vector<int>());
+		for(int i=0; i< localGraph.numParts; i++)
+		{
+			cout << "Send count to " << i << " = " << sendCount[i] << endl;
+			sendCount[i] = 0;
+		}
 
 		level ++;
 	} while(numActiveVertices > 0);
