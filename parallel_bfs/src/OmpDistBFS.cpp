@@ -10,7 +10,7 @@
 
 #define BUFFER_SIZE 100000
 #define EXCHANGE_BUFFER_SIZE 100000
-#define DEBUG
+//#define DEBUG
 
 typedef unsigned int uint;
 
@@ -22,7 +22,7 @@ using namespace std;
 std::vector<int> BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcRank)
 {
 		
-	omp_set_num_threads(4); // Should be passed from the argument list
+	omp_set_num_threads(16); // Should be passed from the argument list
 	int numThreads = omp_get_max_threads();
 	cout << "Num OMP threads " << numThreads << endl;
 	/************** Compute the mapping of vertex GID to vertex lid *****************/
@@ -66,18 +66,18 @@ std::vector<int> BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcR
 
 	int level = 1;
 	int numActiveVertices = 0;
-	clock_t start = clock();
+	int i = 0, j, nborGID, owner, lid_;
+
 	do
 	{
 		//visiting neighbouring vertices in parallel
 		
-		int i = 0, j, nborGID, owner, lid_;
 		//#pragma omp parallel for private(i, j, nborGID, owner, lid_) shared(FS, localGraph, gid2lid, dist) collapse(2)
-		// #pragma omp parallel for private(i, j, nborGID, owner, lid_) shared(FS, localGraph, gid2lid, dist)
+		#pragma omp parallel for private(i, j, nborGID, owner, lid_) shared(FS, NS, localGraph, gid2lid, dist, sendCount, sendBuf) collapse(2)
 		for(i=0; i < lenFS; i++)
 		{
 			// Iterate over the neighbours of the vertex
-			#pragma omp parallel for private(j, nborGID, owner, lid_) shared(FS, localGraph, gid2lid, dist)
+			// #pragma omp parallel for private(j, nborGID, owner, lid_) shared(FS, localGraph, gid2lid, dist)
 			for(j=localGraph.nborIndex[(*FS)[i]]; j<localGraph.nborIndex[(*FS)[i] + 1]; j++)
 			{
 				// This is the Global ID of the neighbour
@@ -92,15 +92,17 @@ std::vector<int> BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcR
 					if(dist[lid_] == -1)
 					{
 						#pragma omp critical
-						(*NS)[lenNS++] = lid_;
-						dist[lid_] = level;
+						{
+							(*NS)[lenNS++] = lid_;
+							dist[lid_] = level;
+						}
 					}
 				}
 				else
 				{
 					// sendBuf[owner].push_back(nborGID);
 					#ifdef DEBUG
-                    if (sendCount[owner] > EXCHANGE_BUFFER_SIZE)
+                    			if (sendCount[owner] > EXCHANGE_BUFFER_SIZE)
 						cout << "Send buffer overflow" << endl;
 					#endif
 					#pragma omp critical
@@ -108,6 +110,8 @@ std::vector<int> BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcR
 				}
 			}
 		}
+
+		#pragma omp barrier
 
 		// FS->clear();
 		temp = FS;
@@ -154,7 +158,6 @@ std::vector<int> BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcR
 		
 		for(int i=0; i<localGraph.numParts; i++)
 		{
-
 			for(int j=0; j<recvCount[i]; j++)
 			{
 				int gid = recvBuf[i][j];
@@ -180,9 +183,6 @@ std::vector<int> BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcR
 
 		level ++;
 	} while(numActiveVertices > 0);
-
-	clock_t stop = clock();
-	exec_time = double(stop - start) / (CLOCKS_PER_SEC / 1000.00);
 	sendBuf.clear();
 
 	return dist;
@@ -250,8 +250,10 @@ int main(int argc, char *argv[]) {
 	getSubGraph(comm, &localGraph, fname, numParts);
 	srand(time(NULL));
 
-
+	clock_t start = clock();
 	std::vector<int> dist = BFS(comm, localGraph, srcLid, srcRank);
+        clock_t stop = clock();
+        exec_time = double(stop - start) / (CLOCKS_PER_SEC / 1000.00);
 
 	int i;
 	int totalVtx;
