@@ -8,6 +8,8 @@
 #include "BFS.h"
 #include <omp.h>
 
+#define WRITE_OUTPUT
+
 typedef unsigned int uint;
 
 static int myRank;
@@ -258,6 +260,7 @@ int main(int argc, char *argv[]) {
 	exec_time = double(stop - start) / (CLOCKS_PER_SEC / 1000.00);
     exec_time = exec_time / (double(num_iter+1));
 
+#ifdef WRITE_OUTPUT
 	int i;
 	int totalVtx;
 	MPI_Allreduce(&(localGraph.numVertices), &totalVtx, 1, MPI_INT, MPI_SUM, comm);
@@ -285,6 +288,8 @@ int main(int argc, char *argv[]) {
 	}
 
 	globalDist.clear();
+#endif // WRITE_OUTPUT
+
 	graphDeinit(&localGraph);
 	MPI_Finalize();
 	return 0;
