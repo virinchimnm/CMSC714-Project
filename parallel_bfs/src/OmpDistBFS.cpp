@@ -34,8 +34,17 @@ std::vector<int> BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcR
 	std::vector<std::vector<int>> recvBuf(localGraph.numParts);
 	std::vector<std::vector<int>> sendBuf(localGraph.numParts);
 
-	std::vector<int> dist(localGraph.numVertices, -1);
+	std::vector<int> dist(localGraph.numVertices);
+
+    #pragma omp parallel for
+    for(int i=0; i<localGraph.numVertices; i++)
+    {
+        dist[i] = -1;
+    }
+
 	std::vector<int> *FS = new std::vector<int>(0);
+    std::vector<int> *NS = new std::vector<int>(0);
+    std::vector<int> *swap_temp;
 	
 	if(srcRank == myRank)
 	{
@@ -48,7 +57,6 @@ std::vector<int> BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcR
 	do
 	{
 		//visiting neighbouring vertices in parallel
-		std::vector<int> *NS = new std::vector<int>(0);
 		//#pragma omp parallel for private(i)
 		#pragma omp parallel
 		{
@@ -99,7 +107,9 @@ std::vector<int> BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcR
 		}
 
 		FS->clear();
+        swap_temp = FS;
 		FS = NS;
+        NS = swap_temp;
 
 		MPI_Request request;
 		//sending newly visited nbors to their owners in parallel
@@ -239,10 +249,14 @@ int main(int argc, char *argv[]) {
 	getSubGraph(comm, &localGraph, fname, numParts);
 	srand(time(NULL));
 
+    int num_iter = 100;
 	clock_t start = clock();
-	std::vector<int> dist = BFS(comm, localGraph, srcLid, srcRank);
+    std::vector<int> dist = BFS(comm, localGraph, srcLid, srcRank);
+    for(int i=0; i<num_iter; i++)
+	   BFS(comm, localGraph, srcLid, srcRank);
 	clock_t stop = clock();
 	exec_time = double(stop - start) / (CLOCKS_PER_SEC / 1000.00);
+    exec_time = exec_time / (double(num_iter+1));
 
 	int i;
 	int totalVtx;

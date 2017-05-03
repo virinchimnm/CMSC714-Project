@@ -51,7 +51,6 @@ std::vector<int> BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcR
 
 	int level = 1;
 	int numActiveVertices = 0;
-	clock_t start = clock();
 	do
 	{
 		//visiting neighbouring vertices in parallel
@@ -149,8 +148,6 @@ std::vector<int> BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcR
 		level ++;
 	} while(numActiveVertices > 0);
 
-	clock_t stop = clock();
-	exec_time = double(stop - start) / (CLOCKS_PER_SEC / 1000.00);
 	sendBuf.clear();
 
 	return dist;
@@ -221,7 +218,14 @@ int main(int argc, char *argv[]) {
 	srand(time(NULL));
 
 
-	std::vector<int> dist = BFS(comm, localGraph, srcLid, srcRank);
+	int num_iter = 100;
+	clock_t start = clock();
+    std::vector<int> dist = BFS(comm, localGraph, srcLid, srcRank);
+    for(int i=0; i<num_iter; i++)
+	   BFS(comm, localGraph, srcLid, srcRank);
+	clock_t stop = clock();
+	exec_time = double(stop - start) / (CLOCKS_PER_SEC / 1000.00);
+    exec_time = exec_time / (double(num_iter+1));
 
 	int i;
 	int totalVtx;
