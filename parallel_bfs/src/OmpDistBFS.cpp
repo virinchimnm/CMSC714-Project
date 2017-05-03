@@ -17,25 +17,19 @@ using namespace std;
 
 std::vector<int> BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcRank)
 {
-	// omp_set_num_threads(omp_n); Should be passed from the argument list
+	omp_set_num_threads(16); // Should be passed from the argument list
 	/************** Compute the mapping of vertex GID to vertex lid *****************/
-	int totalVtx;
-	MPI_Allreduce(&(localGraph.numVertices), &totalVtx, 1, MPI_INT, MPI_SUM, comm);
 	
-	// TODO: Replace gid2lid by an unordered_map
-
 	std::unordered_map<int,int> gid2lid;
-	#pragma omp parallel for
+	// #pragma omp parallel for
 	for(int i =0; i<localGraph.numVertices; i++)
 	{	
-		#pragma omp critical
+		// #pragma omp critical
 		gid2lid[localGraph.vertexGIDs[i]] = i;
 	}
 
 	/******* Initialize sending and receiving buffer ********/
 	std::vector<int> recvCount(localGraph.numParts);
-	std::vector<unsigned long> recvDummy(localGraph.numParts);
-	std::vector<unsigned long> sendDummy(localGraph.numParts);
 	
 	std::vector<std::vector<int>> recvBuf(localGraph.numParts);
 	std::vector<std::vector<int>> sendBuf(localGraph.numParts);
@@ -51,39 +45,56 @@ std::vector<int> BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcR
 
 	int level = 1;
 	int numActiveVertices = 0;
-	clock_t start = clock();
 	do
 	{
 		//visiting neighbouring vertices in parallel
 		std::vector<int> *NS = new std::vector<int>(0);
-		sendDummy.assign(localGraph.numParts,0);
 		//#pragma omp parallel for private(i)
-		for(uint i=0; i<FS->size(); i++)
+		#pragma omp parallel
 		{
-			int lid = FS->at(i);
+			std::vector<int> vec_private;
+			std::vector<std::vector<int>> sendBuf_private(localGraph.numParts);
 
-			// Iterate over the neighbours of the vertex
-			for(int j=localGraph.nborIndex[lid]; j<localGraph.nborIndex[lid + 1]; j++)
+			#pragma omp for nowait 
+			for(uint i=0; i<FS->size(); i++)
 			{
-				// This is the Global ID of the neighbour
-				int nborGID = localGraph.nborGIDs[j];
-				// This is the processor on which the neighbour is sitting on
-				int owner = localGraph.nborProcs[j];
-
-				// If I am the owner, find the local ID of this node and append to neighbour frontier.
-				if(owner == myRank)
+				
+				int lid = FS->at(i);
+				
+				// Iterate over the neighbours of the vertex
+				
+				for(int j=localGraph.nborIndex[lid]; j<localGraph.nborIndex[lid + 1]; j++)
 				{
-					int lid_ = gid2lid[nborGID];
-					if(dist[lid_] == -1)
+					// This is the Global ID of the neighbour
+					int nborGID = localGraph.nborGIDs[j];
+					// This is the processor on which the neighbour is sitting on
+					int owner = localGraph.nborProcs[j];
+
+					// If I am the owner, find the local ID of this node and append to neighbour frontier.
+					if(owner == myRank)
 					{
-						NS->push_back(lid_);
-						dist[lid_] = level;
+						int lid_ = gid2lid[nborGID];
+						if(dist[lid_] == -1)
+						{
+							// NS->push_back(lid_);
+							vec_private.push_back(lid_);
+							dist[lid_] = level;
+						}
+					}
+					else
+					{
+						// sendBuf[owner].push_back(nborGID);
+						sendBuf_private[owner].push_back(nborGID);
 					}
 				}
-				else
-				{
-					sendBuf[owner].push_back(nborGID);
-				}
+
+			}
+			// #pragma omp barrier
+			#pragma omp critical
+			{
+				NS->insert(NS->end(), vec_private.begin(), vec_private.end());
+				for(int p=0; p < localGraph.numParts; p++)
+					sendBuf[p].insert(sendBuf[p].end(), sendBuf_private[p].begin(), sendBuf_private[p].end());
 			}
 		}
 
@@ -92,7 +103,7 @@ std::vector<int> BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcR
 
 		MPI_Request request;
 		//sending newly visited nbors to their owners in parallel
-		#pragma omp parallel for
+		// #pragma omp parallel for
 		for(int i=0; i<localGraph.numParts; i++)
 		{
 			// Sending the length of the send buffer to the neighbours
@@ -103,56 +114,64 @@ std::vector<int> BFS(MPI_Comm comm, GraphStruct localGraph, int srcLid, int srcR
 			}
 		}
 
-		#pragma omp parallel for
+		// #pragma omp parallel for
 		for(int i=0; i<localGraph.numParts; i++)
 		{
 			// Rank i gather sendCount[i] from each rank
 			// This is the total number of neighbours this node gets
 			int s = sendBuf[i].size();
 			MPI_Gather(&(s), 1, MPI_INT, &recvCount.front(), 1, MPI_INT, i, comm);
-			MPI_Gather(&sendDummy.front() + i, 1, MPI_UNSIGNED_LONG, &recvDummy.front(), 1, MPI_UNSIGNED_LONG, i, comm);
 		}
 
-		#pragma omp parallel for
+		// #pragma omp parallel for
 		for(int i=0; i<localGraph.numParts; i++)
 		{
 			recvBuf[i] = std::vector<int>(recvCount[i]);
 			if(recvCount[i])
 			{
-				#pragma omp critical
+				// #pragma omp critical
 				MPI_Recv(&(recvBuf[i].front()), recvCount[i], MPI_INT, i, 1, comm, MPI_STATUS_IGNORE);
 			}
 		}
 
 		//handling newly visited vertices and compute the distance
 		
-		for(int i=0; i<localGraph.numParts; i++)
+		#pragma omp parallel
 		{
-
-			for(int j=0; j<recvCount[i]; j++)
+			std::vector<int> vec_private;
+			int i, j;
+			#pragma omp for nowait 
+			for(i=0; i<localGraph.numParts; i++)
 			{
-				int gid = recvBuf[i][j];
-				int lid = gid2lid[gid];
-				if(dist[lid] == -1)
+				for(j=0; j<recvCount[i]; j++)
 				{
-					dist[lid] = level;
-					FS->push_back(lid);
+					int gid = recvBuf[i][j];
+					int lid = gid2lid[gid];
+					if(dist[lid] == -1)
+					{
+						dist[lid] = level;
+						// FS->push_back(lid);
+						vec_private.push_back(lid);
+					}
 				}
+				
 			}
-			 // is this required?
+			#pragma omp critical
+    		FS->insert(FS->end(), vec_private.begin(), vec_private.end());
 		}
 
 
 		numActiveVertices = FS->size();
 		MPI_Allreduce(MPI_IN_PLACE, &numActiveVertices, 1, MPI_INT, MPI_SUM, comm);
-		recvBuf.assign(localGraph.numParts,std::vector<int>());
-		sendBuf.assign(localGraph.numParts,std::vector<int>());
+		for(int i=0; i<localGraph.numParts; i++)
+		{
+			sendBuf[i].clear();
+			recvBuf[i].clear(); 
+		}
 
 		level ++;
 	} while(numActiveVertices > 0);
 
-	clock_t stop = clock();
-	exec_time = double(stop - start) / (CLOCKS_PER_SEC / 1000.00);
 	sendBuf.clear();
 
 	return dist;
@@ -220,8 +239,10 @@ int main(int argc, char *argv[]) {
 	getSubGraph(comm, &localGraph, fname, numParts);
 	srand(time(NULL));
 
-
+	clock_t start = clock();
 	std::vector<int> dist = BFS(comm, localGraph, srcLid, srcRank);
+	clock_t stop = clock();
+	exec_time = double(stop - start) / (CLOCKS_PER_SEC / 1000.00);
 
 	int i;
 	int totalVtx;
