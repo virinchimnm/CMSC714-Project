@@ -173,7 +173,12 @@ void getSubGraph(MPI_Comm comm, GraphStruct *sub_graph, std::string fname, int n
 			printf("File %s not found\n", fname.c_str());
 		}
 		GraphStruct globalGraph;
-		graphLoad(&globalGraph, fp);
+		
+		//Changed this for loading the graph for counting triangles.
+		//graphLoad(&globalGraph, fp);
+		printf("Calling the graph load for counting triangles.");
+		graphLoadForCountingTriangles(&globalGraph, fp);
+		
 
 		// This functions creates a partition by assigning n/p vertices to each processors
 		// hashingPartitioning(&globalGraph, numParts);	//hashing partitioning

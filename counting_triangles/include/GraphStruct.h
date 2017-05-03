@@ -28,6 +28,7 @@ void graphDeinit(GraphStruct *graph);
 void graphPrint(GraphStruct graph);
 
 int graphLoad(GraphStruct *global_graph, FILE * gdata);
+int graphLoadForCountingTriangles(GraphStruct *global_graph, FILE * gdata);
 
 #ifdef __cplusplus
 }
