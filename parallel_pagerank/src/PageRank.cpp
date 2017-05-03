@@ -8,14 +8,13 @@
 #include "GraphDist.h"
 // #include <omp.h>
 
-// #define WRITE_OUTPUT
+#define WRITE_OUTPUT
 
 typedef unsigned int uint;
 
 static int myRank;
 static clock_t exec_time;
 static double d = 0.85;
-static int num_iter = 10;
 
 using namespace std;
 
@@ -78,7 +77,6 @@ void pageRank(MPI_Comm comm, GraphStruct* localGraph, int num_iter)
 
 	for(int iter=0; iter < num_iter; iter++)
 	{
-		// printf("Checkpoint 1 %d\n", myRank);
 		// Compute pagerank/degree for nodes which are neighbours of vertices on different nodes
 		// TODO: OpenMP here.
 		for(int k=0; k<numNonLocal; k++)
@@ -195,7 +193,7 @@ void pageRank(MPI_Comm comm, GraphStruct* localGraph, int num_iter)
 	}
 }
 
-void parseCommandLineArguments(int argc,char *argv[], int &root, std::string &ip, std::string &op)
+void parseCommandLineArguments(int argc,char *argv[], int &num_iter, std::string &ip, std::string &op)
 {
 	ip = "input/sample_input.txt";
 	op = "";
@@ -204,12 +202,12 @@ void parseCommandLineArguments(int argc,char *argv[], int &root, std::string &ip
 		if(std::string(argv[i]) == "-i")
 		{
 			ip = std::string(argv[i+1]);
-			std::cout << "input file path " << ip << std::endl;
+			// std::cout << "input file path " << ip << std::endl;
 		}
 		else if(std::string(argv[i]) == "-iter")
 		{
 			num_iter = std::stoi(argv[i+1]);
-			std::cout << "Number of iterations " << num_iter << std::endl;
+			// std::cout << "Number of iterations " << num_iter << std::endl;
 		}
 	}
 }
@@ -223,16 +221,15 @@ int main(int argc, char *argv[]) {
 	MPI_Comm_rank(comm, &myRank);
 	MPI_Comm_size(comm, &numParts);
 
-	if(myRank == 0)
-		cout << "Number of MPI processes " << numParts << endl;
+	// if(myRank == 0)
+		// cout << "Number of MPI processes " << numParts << endl;
 	
-	int srcRank = 0;
-	int srcLid = 0;
 	std::string fname, ofname;
+	int num_iter;
 
-	if(myRank == srcRank)
+	// if(myRank == srcRank)
 	{
-		parseCommandLineArguments(argc,argv,srcLid,fname,ofname);
+		parseCommandLineArguments(argc, argv, num_iter, fname, ofname);
 	}
 
 	GraphStruct localGraph;
@@ -246,13 +243,17 @@ int main(int argc, char *argv[]) {
 
 	clock_t stop = clock();
 	exec_time = double(stop - start) / (CLOCKS_PER_SEC / 1000.00);
-	// printf("BEFORE FINAL BARRIER %d\n", myRank);
 	MPI_Barrier(comm);
 
 #ifdef WRITE_OUTPUT
-	for(int i =0; i<localGraph.numVertices; i++)
+	for(int r = 0; r < numParts; r++)
 	{
-		printf("%d %.6lf\n", localGraph.vertexGIDs[i], localGraph.oldPageRank[i]);
+		if(myRank != r)
+			continue;
+		for(int i =0; i<localGraph.numVertices; i++)
+		{
+			printf("%d %.8lf\n", localGraph.vertexGIDs[i], localGraph.oldPageRank[i]);
+		}
 	}
 #endif // WRITE_OUTPUT
 	cout << exec_time <<"ms (mpi)"<< endl;
