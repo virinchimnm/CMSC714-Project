@@ -67,7 +67,7 @@ int graphLoad(GraphStruct * graph, FILE * fp) {
 	for (i = 0; i < numGlobalVertices; i++) {
 		fscanf(fp, "%d%d%d", &graph->vertexGIDs[i], &graph->partVector[i], &nnbors);
 		// printf("GID %d Part %d #Neighbours %d\n", graph->vertexGIDs[i], graph->partVector[i], nnbors);
-		
+
 		graph->nborIndex[i + 1] = graph->nborIndex[i] + nnbors;
 		for (j = graph->nborIndex[i]; j<graph->nborIndex[i + 1]; j++) {
 			fscanf(fp, "%d", &graph->nborGIDs[j]);
@@ -75,4 +75,59 @@ int graphLoad(GraphStruct * graph, FILE * fp) {
 		}
 	}
 	return 0;
+}
+
+//This function is helpful on reading the graph for counting triangles.
+//Here the adjacency matrix of the graph is modified in such a way that the 
+//for vertices u < v and for an 'uv': Only the adjacency list of u depicts an
+//edge between the vertices. This is helpful because this removes the duplicate
+//counts of the triangle.
+int graphLoadForCountingTriangles(GraphStruct * graph, FILE * fp){
+
+	int numGlobalVertices, numGlobalEdges, numParts;
+	int i, j, nnbors;
+
+	/* Get the number of vertices */
+	fscanf(fp, "%d", &numGlobalVertices);
+	// printf("numGlobalVertices = %d\n", numGlobalVertices);
+
+	/* Get the number of edges  */
+	fscanf(fp, "%d", &numGlobalEdges);
+	// printf("numGlobalEdges = %d\n", numGlobalEdges);
+
+	/* Get the number of partitions  */
+	fscanf(fp, "%d", &numParts);
+	graph->numParts = numParts;
+	// printf("numParts = %d\n", numParts);
+
+	/* Allocate arrays to read in entire graph */
+	graphInit(graph, numGlobalVertices, numGlobalEdges << 1, numParts);
+
+	for (i = 0; i < numGlobalVertices; i++) {
+		fscanf(fp, "%d%d%d", &graph->vertexGIDs[i], &graph->partVector[i], &nnbors);
+		// printf("GID %d Part %d #Neighbours %d\n", graph->vertexGIDs[i], graph->partVector[i], nnbors);
+
+		j = graph->nborIndex[i];
+		int k =0, connectedVertex=0;
+
+		printf("\n%d : ", i);
+
+		for(k=0; k<nnbors; k++){
+			fscanf(fp, "%d", &connectedVertex);
+			if(i<connectedVertex){
+				graph->nborGIDs[j] = connectedVertex;
+				j++;
+				printf("%d ", connectedVertex);
+			}
+		}
+
+		graph->nborGIDs[j] = j - graph->nborIndex[i];
+		//for (j = graph->nborIndex[i]; j<graph->nborIndex[i + 1]; j++) {
+		//	fscanf(fp, "%d", &graph->nborGIDs[j]);
+			// printf("%d ", graph->nborGIDs[j]);
+		//}
+		graph->nborIndex[i + 1] = j;
+	}
+	return 0;
+
 }
