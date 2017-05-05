@@ -88,6 +88,8 @@ void compute_cc(MAP adjlist){
         for(j=0;j<vec.size();j++){
             for(k=j+1;k<vec.size();k++){
                 if(adjlist[vec[j]][vec[k]]){
+                    if(i ==0)
+                        cout << "DEBUG " << vec[j] <<  "->" << vec[k] << endl; 
                     num++;
                 }
             }
@@ -96,7 +98,8 @@ void compute_cc(MAP adjlist){
         if(den==0 || den==1){
             cc=0;
         }else{
-            cc=2.0*num/(den*(den-1));
+            // cc=2.0*num/( ((double) den) * ((double)(den-1)));
+            cc = num;
         }
         
         //gcc+=cc;
@@ -125,7 +128,7 @@ int main(int argc, char* argv[]){
 
     if(argc < optind)
     {
-        cout<< "./output_to_gpmetis -g path-to-graph\n";
+        cout<< "./serial_cc -g path-to-graph\n";
         exit(0);
     }
 
