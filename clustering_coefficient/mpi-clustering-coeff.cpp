@@ -10,7 +10,7 @@
 
 using namespace std;
 
-#define WRITE_OUTPUT
+// #define WRITE_OUTPUT
 
 static clock_t exec_time, read_time;
 static int myRank;
@@ -30,7 +30,7 @@ void parseCommandLineArguments(int argc, char *argv[], std::string &ip)
 		if(std::string(argv[i]) == "-i")
 		{
 			ip = std::string(argv[i+1]) + "." + part;
-			std::cout << "input file path " << ip << std::endl;
+			// std::cout << "input file path " << ip << std::endl;
 		}
 	}
 }
@@ -92,6 +92,7 @@ int main(int argc, char *argv[])
 	
 	// vector<int> temp;
 	// unordered_map <int, bool> opt_temp;
+	int num_local = 0;
 
 	clock_t start = clock();
 	for(int i=0; i<V; i++)
@@ -99,6 +100,8 @@ int main(int argc, char *argv[])
 		int vid, num_neighbours, owner;
 		fscanf(fp, "%d%d%d", &vid, &owner, &num_neighbours);
 		isOwner[vid] = owner;
+		if(owner == 1)
+			num_local++;
 		
 		clustering_coefficient[vid] = 0.0;
 		GIDs.push_back(vid);
@@ -134,6 +137,7 @@ int main(int argc, char *argv[])
 
 	cout << "Reading time " << read_time << "ms" << endl;
 	cout << "CC time " << exec_time << "ms" << endl;
+	cout << "Rank " << myRank << "  " << num_local << endl;
 	MPI_Finalize();
 	return 0;
 }
