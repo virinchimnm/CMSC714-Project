@@ -6,3 +6,5 @@ echo "Buiding parallel code"
 # mpic++ parallel_cc.cpp -o ./parallel_cc  -std=c++0x 
 mpic++ mpi-clustering-coeff.cpp -o mpi-cc -std=c++0x 
 
+mpic++ mpi-count-triangles.cpp -o mpi-triangles -std=c++0x 
+
