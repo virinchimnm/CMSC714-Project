@@ -11,7 +11,6 @@ using namespace std;
 
 #define WRITE_OUTPUT
 
-static double d = 0.85;
 static clock_t exec_time;
 
 vector<vector<int> > graph;
@@ -106,6 +105,7 @@ int main(int argc, char *argv[])
 
 	compute_clustering_coefficient();
 
+#ifdef WRITE_OUTPUT
 	double overall = 0;
 	for(int i=0; i<V; i++)
 	{
@@ -114,5 +114,6 @@ int main(int argc, char *argv[])
 	}	
 	overall = overall/V;
 	printf("%.6lf\n", overall);
+#endif
 	return 0;
 }
