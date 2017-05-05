@@ -10,7 +10,7 @@
 
 using namespace std;
 
-// #define WRITE_OUTPUT
+#define WRITE_OUTPUT
 
 static clock_t exec_time, read_time;
 static int myRank;
@@ -113,9 +113,12 @@ int main(int argc, char *argv[])
 		{
 			int neighbourID;
 			fscanf(fp, "%d", &neighbourID);
-			graph[vid].push_back(neighbourID);
+			if(neighbourID != vid)
+			{
+				graph[vid].push_back(neighbourID);
 
-			opt_graph[vid][neighbourID] = true;
+				opt_graph[vid][neighbourID] = true;
+			}
 		}
 	}
 	clock_t stop = clock();
@@ -127,17 +130,22 @@ int main(int argc, char *argv[])
 	exec_time = double(stop - start) / (CLOCKS_PER_SEC / 1000.00);
 
 #ifdef WRITE_OUTPUT
-	for(int i=0; i<V; i++)
+	for(int r = 0; r < numParts; r++)
 	{
-		if(isOwner[i] == 0)
+		if(r != myRank)
 			continue;
-		printf("%d %.6lf\n", GIDs[i], clustering_coefficient[GIDs[i]]);
+		for(int i=0; i<V; i++)
+		{
+			if(isOwner[GIDs[i]] == 0)
+				continue;
+			printf("%d %.6lf\n", GIDs[i], clustering_coefficient[GIDs[i]]);
+		}
 	}
 #endif
 
-	cout << "Reading time " << read_time << "ms" << endl;
-	cout << "CC time " << exec_time << "ms" << endl;
-	cout << "Rank " << myRank << "  " << num_local << endl;
+	// cout << "Reading time " << read_time << "ms" << endl;
+	// cout << "CC time " << exec_time << "ms" << endl;
+	// cout << "Rank " << myRank << "  " << num_local << endl;
 	MPI_Finalize();
 	return 0;
 }
