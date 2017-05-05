@@ -45,16 +45,12 @@ void compute_clustering_coefficient()
 
 		for(int j=0; j < num_neighbours; j++)
 		{
-			for(int k=j+1; k < num_neighbours; k++)
+			for(int k=0; k < num_neighbours; k++)
 			{
 				// if graph[i][j] is a neighbour of graph[i][k], then add 2 to neu.
 				if(opt_graph[graph[i][j]].find(graph[i][k]) != opt_graph[graph[i][j]].end())
 				{
 					neu += 1;
-					if(i == 0)
-					{
-						cout << "DEBUG " << graph[i][j] <<  "->" << graph[i][k] << endl; 
-					}
 				}
 			}
 		}
@@ -62,9 +58,7 @@ void compute_clustering_coefficient()
 		{
 			double den = ((double)(num_neighbours)) * ((double)(num_neighbours - 1));
 
-			// clustering_coefficient[i] = 2.0 * neu/den;
-			clustering_coefficient[i] = neu;
-			// printf("%d %d %.6lf\n", i, num_neighbours, clustering_coefficient[i]);
+			clustering_coefficient[i] = neu/den;
 		}
 	}
 }
@@ -101,13 +95,11 @@ int main(int argc, char *argv[])
 		{
 			int neighbourID;
 			fscanf(fp, "%d", &neighbourID);
-			if(i < neighbourID)
-			{
+		
+			if(neighbourID != i)
+			{		
 				graph[i].push_back(neighbourID);
 				opt_graph[i][neighbourID] = true;
-
-				graph[neighbourID].push_back(i);
-				opt_graph[neighbourID][i] = true;
 			}
 		}
 	}
