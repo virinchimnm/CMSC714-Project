@@ -1,3 +1,4 @@
+#include <time.h>
 #include <iostream>
 #include <stdio.h>
 #include <unistd.h>
@@ -7,6 +8,8 @@
 #include <string>
 #include <mpi.h>
 using namespace std;
+
+// #define WRITE_OUTPUT
 
 
 typedef unordered_map<long long int, unordered_map<long long int, bool> > MAP;
@@ -297,7 +300,9 @@ void compute_cc(MAP adjlist, vector<long long int> local_nodes){
         }
         
         //gcc+=cc;
+#ifdef WRITE_OUTPUT
         cout<<local_nodes[i]<<","<<cc<<endl;
+#endif
         vec.clear();
         
     }
@@ -330,7 +335,7 @@ int main(int argc, char* argv[]){
     }
 
     
-    MPI_Init(NULL, NULL);
+    MPI_Init(&argc, &argv);
     MPI_Comm comm = MPI_COMM_WORLD; 
 
 
@@ -351,7 +356,13 @@ int main(int argc, char* argv[]){
     	local_adjlist = receive_graph(comm,local_nodes);
     }
     
+    clock_t start = clock();
     compute_cc(local_adjlist,local_nodes);
+    clock_t stop = clock();
+    double exec_time = double(stop - start) / (CLOCKS_PER_SEC / 1000.00);
+    cout << "exec_time " << exec_time << "ms" << endl;
+
+    MPI_Barrier(comm);
 
     MPI_Finalize();
 
