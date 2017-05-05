@@ -74,7 +74,7 @@ void compute_cc(MAP adjlist){
 
     for(i=0;i<adjlist.size();i++){
 
-        cout<<i<<endl;
+        //cout<<i<<endl;
         for(dest_it=adjlist[i].begin();dest_it!=adjlist[i].end();++dest_it){
         	if(i!=dest_it->first){
         		vec.push_back(dest_it->first);
@@ -99,13 +99,13 @@ void compute_cc(MAP adjlist){
             cc=2.0*num/(den*(den-1));
         }
         
-        gcc+=cc;
-        //cout<<i<<","<<cc<<endl;
+        //gcc+=cc;
+        cout<<i<<","<<cc<<endl;
         vec.clear();
         
     }
 
-    cout<<"Global CC= "<<1.0*gcc/adjlist.size()<<endl;
+    //cout<<"Global CC= "<<1.0*gcc/adjlist.size()<<endl;
 
     return;
 }
