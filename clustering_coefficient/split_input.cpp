@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <unordered_map>
 #include <vector>
+#include <algorithm>
 #include <string>
 using namespace std;
 
@@ -13,33 +14,42 @@ using namespace std;
 typedef unordered_map<long long int, unordered_map<long long int, bool> > MAP;
 
 
-void write_vector(string filename, vector<long long int> vec){
+void write_graph(string filename, vector<long long int> local_nodes, MAP adjlist){
     
     ofstream ofile;
     ofile.open (filename,ios::out);
 
-    for(int i=0;i<vec.size();i++){
-        ofile<<vec[i]<<" ";
-    }
-    ofile<<endl;
-    ofile.close();
-}
-
-void write_graph(string filename, MAP adjlist){
-    
-    ofstream ofile;
-    ofile.open (filename,ios::app);
+    ofile<<adjlist.size()<<endl;
 
     MAP::iterator src_it;
     for(src_it=adjlist.begin();src_it!=adjlist.end();++src_it)
     {
 
         unordered_map<long long int, bool>::iterator dest_it;
-        ofile<<src_it->first<<" ";
+        vector<long long int> vec;
+        
         for(dest_it = src_it->second.begin();dest_it != src_it->second.end();++dest_it)
         {
-            ofile<<dest_it->first<<" ";   
+            vec.push_back(dest_it->first);
+            //ofile<<dest_it->first<<" ";   
         }
+
+        ofile<<src_it->first<<" ";
+
+        //check if this node is local or not
+        
+        if(std::find(local_nodes.begin(), local_nodes.end(), src_it->first) != local_nodes.end()){
+            ofile<<1<<" ";
+        }else{
+            ofile<<0<<" ";
+        }
+
+        ofile<<vec.size()<<" ";
+
+        for(int i=0;i<vec.size();i++){
+            ofile<<vec[i]<<" ";
+        }
+
         ofile<<endl;
     }
 
@@ -174,8 +184,7 @@ void write_local_graphs(const char* filename,MAP global_adjlist, unordered_map <
         outfilename.append(".");
         outfilename.append(std::to_string(i));
 
-        write_vector(outfilename, local_nodes);
-        write_graph(outfilename, local_adjlist);
+        write_graph(outfilename, local_nodes, local_adjlist);
 
     }
 
