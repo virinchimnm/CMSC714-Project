@@ -9,7 +9,7 @@
 
 using namespace std;
 
-#define WRITE_OUTPUT
+// #define WRITE_OUTPUT
 
 static clock_t exec_time;
 
@@ -95,25 +95,34 @@ int main(int argc, char *argv[])
 			int neighbourID;
 			fscanf(fp, "%d", &neighbourID);
 		
-			if(neighbourID != i)
+			// if(neighbourID != i)
+			// {		
+			// 	graph[i].push_back(neighbourID);
+			// 	opt_graph[i][neighbourID] = true;
+			// }
+
+			if(i < neighbourID)
 			{		
 				graph[i].push_back(neighbourID);
 				opt_graph[i][neighbourID] = true;
+
+				graph[neighbourID].push_back(i);
+				opt_graph[neighbourID][i] = true;
 			}
 		}
 	}
 
 	compute_clustering_coefficient();
 
-#ifdef WRITE_OUTPUT
 	double overall = 0;
 	for(int i=0; i<V; i++)
 	{
+#ifdef WRITE_OUTPUT
 		printf("%d %.6lf\n", i, clustering_coefficient[i]);
+#endif
 		overall += clustering_coefficient[i];
 	}	
 	overall = overall/V;
 	printf("%.6lf\n", overall);
-#endif
 	return 0;
 }

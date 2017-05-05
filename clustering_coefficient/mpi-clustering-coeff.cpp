@@ -10,7 +10,7 @@
 
 using namespace std;
 
-#define WRITE_OUTPUT
+// #define WRITE_OUTPUT
 
 static clock_t exec_time, read_time;
 static int myRank;
@@ -113,11 +113,20 @@ int main(int argc, char *argv[])
 		{
 			int neighbourID;
 			fscanf(fp, "%d", &neighbourID);
-			if(neighbourID != vid)
-			{
-				graph[vid].push_back(neighbourID);
+			// if(neighbourID != vid)
+			// {
+			// 	graph[vid].push_back(neighbourID);
 
+			// 	opt_graph[vid][neighbourID] = true;
+			// }
+
+			if(vid < neighbourID)
+			{		
+				graph[vid].push_back(neighbourID);
 				opt_graph[vid][neighbourID] = true;
+
+				graph[neighbourID].push_back(vid);
+				opt_graph[neighbourID][vid] = true;
 			}
 		}
 	}
@@ -128,6 +137,25 @@ int main(int argc, char *argv[])
 	compute_clustering_coefficient(comm);
 	stop = clock();
 	exec_time = double(stop - start) / (CLOCKS_PER_SEC / 1000.00);
+
+	double avg = 0, result;
+	int num_vertices = 0, N;
+	for(int i=0; i<V; i++)
+	{
+		if(isOwner[GIDs[i]] == 1)
+		{
+			avg += clustering_coefficient[GIDs[i]];
+			num_vertices += 1;
+		}	
+	}
+
+	MPI_Reduce(&avg, &result, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+	MPI_Reduce(&num_vertices, &N, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+	if(myRank == 0)
+	{
+		result = result/N;
+		printf("Average %.6lf\nN = %d\n", result, N);
+	}
 
 #ifdef WRITE_OUTPUT
 	for(int r = 0; r < numParts; r++)
@@ -140,6 +168,7 @@ int main(int argc, char *argv[])
 				continue;
 			printf("%d %.6lf\n", GIDs[i], clustering_coefficient[GIDs[i]]);
 		}
+		MPI_Barrier(comm);
 	}
 #endif
 
