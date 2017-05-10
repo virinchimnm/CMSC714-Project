@@ -1,20 +1,22 @@
-#!/bin/tcsh
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=4
-#SBATCH -t 00:00:15
-#SBATCH --mem-per-cpu=2048
-#SBATCH --exclusive
+#!/bin/bash
+#SBATCH --nodes=2
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=8
+#SBATCH -t 00:02:00
 #SBATCH --mail-user=somay@umd.edu
 #SBATCH --mail-type=END
-#SBATCH --output=output_2_16.txt
+#SBATCH --output=omp_mpi_output_2_8.txt
 #SBATCH -p debug
+#SBATCH --exclusive
 
 module unload intel
 module load openmpi/gnu
 
-#echo "Hostnames - "
-#/bin/hostname
+OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
+export OMP_NUM_THREADS
 
-./build.sh
+echo "Running OMP code"
+mpirun  ./omp-cc -i /lustre/cmsc714-1buw/datasets/amazon-2.txt
 
-mpirun  ./parallel_cc -g /lustre/cmsc714-1buw/datasets/amazon-4.txt 
+echo "Running MPI code"
+mpirun  ./mpi-cc -i /lustre/cmsc714-1buw/datasets/amazon-2.txt
