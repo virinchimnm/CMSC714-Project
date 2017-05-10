@@ -1,6 +1,7 @@
 
 echo "Buiding serial code"
 g++ serial-cc-efficient.cpp -o ./serial_cc  -std=c++0x 
+g++ serial-triangles.cpp -o ./serial_triangles  -std=c++0x 
 
 echo "Buiding MPI parallel code"
 # mpic++ parallel_cc.cpp -o ./parallel_cc  -std=c++0x 
