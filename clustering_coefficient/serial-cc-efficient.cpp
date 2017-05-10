@@ -11,7 +11,7 @@ using namespace std;
 
 // #define WRITE_OUTPUT
 
-static clock_t exec_time;
+static clock_t exec_time, read_time;
 
 vector<vector<int> > graph;
 vector< unordered_map <int, bool> > opt_graph;
@@ -80,6 +80,7 @@ int main(int argc, char *argv[])
 	fscanf(fp, "%d", &ignore);
 
 	// Take the input.
+	clock_t start = clock();
 	for(int i=0; i<V; i++)
 	{
 		graph.push_back(temp);
@@ -111,8 +112,13 @@ int main(int argc, char *argv[])
 			}
 		}
 	}
+	clock_t stop = clock();
+	read_time = double(stop - start) / (CLOCKS_PER_SEC / 1000.00);
 
+	start = clock();
 	compute_clustering_coefficient();
+	stop = clock();
+	exec_time = double(stop - start) / (CLOCKS_PER_SEC / 1000.00);
 
 	double overall = 0;
 	for(int i=0; i<V; i++)
@@ -124,5 +130,7 @@ int main(int argc, char *argv[])
 	}	
 	overall = overall/V;
 	printf("%.6lf\n", overall);
+	cout << "Reading time " << read_time << "ms" << endl;
+	cout << "CC time " << exec_time << "ms" << endl;
 	return 0;
 }

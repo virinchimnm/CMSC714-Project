@@ -172,8 +172,8 @@ int main(int argc, char *argv[])
 	}
 #endif
 
-	// cout << "Reading time " << read_time << "ms" << endl;
-	// cout << "CC time " << exec_time << "ms" << endl;
+	cout << "Reading time " << read_time << "ms" << endl;
+	cout << "CC time " << exec_time << "ms" << endl;
 	// cout << "Rank " << myRank << "  " << num_local << endl;
 	MPI_Finalize();
 	return 0;
